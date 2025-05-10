@@ -2,40 +2,33 @@ const express = require("express");
 const router = express.Router();
 const trackEvent = require("../utils/trackEvent");
 const logApiMetrics = require("../utils/logApiMetrics");
+const asyncHandler = require("express-async-handler");
 
-router.post("/register", async (req, res) => {
-  const start = Date.now(); // Start time to measure response time
-  let retries = 0;
-  const maxRetries = 3;
-  let errorOccurred = false;
-  let statusCode = 200; // Success by default
-  try {
-    // perform logic
-    // Log event to Supabase
+router.post(
+  "/register",
+  asyncHandler(async (req, res) => {
+    const start = Date.now();
+
+    // Your logic here
     await trackEvent({
       event_name: "user_signed_up",
       user_id: "test",
       metadata: { source: req.headers.referer || "direct" },
     });
+
     res.status(200).json({ data: req.body });
-  } catch (error) {
-    errorOccurred = true;
-    statusCode = 500;
-    console.log(error);
-    res.status(statusCode).json({ msg: "Something went wrong" });
-  } finally {
+
     const responseTimeMs = Date.now() - start;
 
-    // Log API metrics
     await logApiMetrics({
       endpoint: "/register",
       responseTimeMs,
-      statusCode,
-      error: errorOccurred,
-      retryAttempts: retries,
+      statusCode: 200,
+      error: false,
+      retryAttempts: 0,
     });
-  }
-});
+  })
+);
 
 router.post("/upload", async (req, res) => {
   try {
